@@ -19,7 +19,82 @@ export default function Board()
         button2: false,
         button3: false
 });
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+function runBFS(grid, start, target) {
+    clearPathVisualization();
+    const visited = new Array(grid.length).fill(false);
+    const parent = new Array(grid.length).fill(null);
+    const queue = [start];
+    visited[start] = true;
 
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (current === target) {
+            return constructPath(parent, start, target);
+        }
+
+        const neighbors = getValidNeighbors(current, grid);
+        for (const neighbor of neighbors) {
+            if (!visited[neighbor]) {
+                queue.push(neighbor);
+                visited[neighbor] = true;
+                parent[neighbor] = current; //Record parent node
+                document.getElementById(`${neighbor}`).style.backgroundColor = '#FFB347';
+            }
+        }
+    }
+
+    return []; //Target not reachable
+}
+
+function clearPathVisualization() {
+    const gridElements = document.querySelectorAll('.square');
+    gridElements.forEach(element => {
+        if (element.style.backgroundColor !== "black") {
+            element.style.backgroundColor = ''; // Clear background color
+        }
+    });
+}
+
+function getValidNeighbors(index, grid) {
+    const neighbors = [];
+    const rowSize = Math.sqrt(grid.length);
+    const row = Math.floor(index / rowSize);
+    const col = index % rowSize;
+
+    //Check neighboring cells for validity
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Up, Down, Left, Right
+    for (const [dx, dy] of directions) {
+        const newRow = row + dx;
+        const newCol = col + dy;
+        const newIndex = newRow * rowSize + newCol;
+        
+        if (
+            newRow >= 0 && newRow < rowSize &&
+            newCol >= 0 && newCol < rowSize &&
+            grid[newIndex] !== 'B'
+        ) {
+            neighbors.push(newIndex);
+        }
+    }
+
+    return neighbors;
+}
+
+
+//Helper function to construct the path from start to target
+function constructPath(parent, start, target) {
+    const path = [target];
+    let current = target;
+    while (current !== start) {
+        document.getElementById(`${current}`).style.backgroundColor = '#00FFFF';
+        current = parent[current];
+        path.unshift(current);
+    }
+    return path;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------------------------------
 function resetBoard() 
 {
     setSquares(Array(81).fill(null));
@@ -32,27 +107,33 @@ function resetBoard()
 //when a square is clicked depending on which mode is highlighted it will do any of the following:
 function handleClick(i) 
 {
+    let start = null
+    let end = null
     const nextSquares = squares.slice();
-    //sets the start point, console logs a message if more than one start point is attempted
-    //ONLY 1 START POINT IS ALLOWED 
     if (activeButton === 'button1')
     {
         if (squares.includes("O")) 
             {
-            console.log("You can only have one starting position!");
+            //allows user to change the start location without resetting the whole board
+            start = squares.indexOf("O");
+            nextSquares[start] = null;
+            nextSquares[i] = 'O';
+            start = 0;
             } 
         else 
         {
             nextSquares[i] = 'O'; // Set starting point
         }
     }
-    //sets the end point, console logs a message if more that on end point is attempted
-    //ONLY 1 END POINT IS ALLOWED
     else if (activeButton === 'button2') 
         {
         if (squares.includes("X")) 
             {
-            console.log("You can only have 1 end point!");
+                //allows user to change the end location without resetting the whole board
+                end = squares.indexOf("X");
+                nextSquares[end] = null;
+                nextSquares[i] = 'X';
+                end = 0;
             } 
         else 
         {
@@ -116,30 +197,35 @@ return (
     <h1>Click a starting spot and an ending spot</h1>
     <h2>O = Starting : X = Ending</h2>
     <button
+    className='button'
     id="button1"
     onClick={() => handleSetActiveButton('button1')}
-    style={{ backgroundColor: buttonStates.button1 ? 'green' : 'transparent' }}
+    style={{ backgroundColor: buttonStates.button1 ? 'green' : 'white' }}
     >
     Set Start
     </button>
     <button
+    className='button'
     id="button2"
     onClick={() => handleSetActiveButton('button2')}
-    style={{ backgroundColor: buttonStates.button2 ? 'red' : 'transparent' }}
+    style={{ backgroundColor: buttonStates.button2 ? 'red' : 'white' }}
     >
     Set End
     </button>
     <button
+    className='button'
     id="button3"
     onClick={() => handleSetActiveButton('button3')}
-    style={{ backgroundColor: buttonStates.button3 ? 'gray' : 'transparent' }}
+    style={{ backgroundColor: buttonStates.button3 ? 'gray' : 'white' }}
     >
     Set Block
     </button>
     <br />
-    <button onClick={resetBoard}>Reset Board</button>
     <br />
-    <button>Run BFS</button>
+    <button className='button' onClick={resetBoard}>Reset Board</button>
+    <br />
+    <br />
+    <button className='button' onClick={() => runBFS(squares, squares.indexOf("O"), squares.indexOf("X"))}>Run BFS</button>
     </>
   );
 }
